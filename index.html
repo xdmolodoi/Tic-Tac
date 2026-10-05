@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Tic Tac Toe AI — Игра против ИИ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box}
+:root{--bg:#080b16;--card:rgba(20,25,45,.72);--line:rgba(255,255,255,.1);--text:#f8fafc;--muted:#9aa4b2;--purple:#8b5cf6;--cyan:#22d3ee}
+body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 20% 20%,#20204d 0,transparent 32%),radial-gradient(circle at 80% 80%,#073d4c 0,transparent 30%),var(--bg);color:var(--text);overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(to bottom,black,transparent);pointer-events:none}
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative}
+.hidden{display:none!important}.container{width:min(520px,100%);position:relative;z-index:2}
+.glass{background:var(--card);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.06);backdrop-filter:blur(20px);border-radius:28px}
+.home{text-align:center;padding:48px 30px;animation:rise .7s ease}
+.logo{width:92px;height:92px;margin:0 auto 25px;border-radius:28px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:grid;place-items:center;font-size:47px;font-weight:800;box-shadow:0 15px 50px rgba(139,92,246,.35);transform:rotate(-4deg)}
+h1{font-size:clamp(38px,10vw,60px);line-height:1;margin:0 0 14px;letter-spacing:-3px}
+.gradient{background:linear-gradient(90deg,#c4b5fd,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);line-height:1.6;margin:0 auto 30px;max-width:390px}
+.primary{border:0;color:white;background:linear-gradient(135deg,#7c3aed,#06b6d4);padding:16px 28px;border-radius:15px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 12px 35px rgba(99,102,241,.3);transition:.2s}
+.primary:hover{transform:translateY(-3px);box-shadow:0 17px 45px rgba(99,102,241,.4)}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:30px}
+.feature{padding:13px 8px;border:1px solid var(--line);border-radius:15px;color:var(--muted);font-size:12px}.feature b{display:block;color:white;font-size:18px;margin-bottom:4px}
+.game{padding:22px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.back{background:none;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:9px 12px;cursor:pointer}.title{font-weight:800;font-size:18px}.ai{color:var(--muted);font-size:12px}
+.controls{display:flex;gap:9px;margin-bottom:15px}.difficulty{display:flex;flex:1;gap:5px;padding:5px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.diff{flex:1;border:0;background:none;color:var(--muted);padding:9px 4px;border-radius:10px;cursor:pointer;font-size:12px}.diff.active{background:rgba(139,92,246,.28);color:#fff}
+.reset{border:1px solid var(--line);background:rgba(255,255,255,.05);color:white;border-radius:13px;padding:0 14px;cursor:pointer}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;text-align:center;margin:10px 0 16px}.player{font-weight:700}.player small{display:block;color:var(--muted);font-weight:500;margin-bottom:5px}.num{font-size:27px}.vs{color:#667085;font-size:12px;font-weight:700}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:5px}
+.cell{position:relative;aspect-ratio:1;border:1px solid rgba(255,255,255,.09);border-radius:20px;background:rgba(255,255,255,.055);color:white;font-size:clamp(48px,15vw,72px);font-weight:800;cursor:pointer;transition:.18s;overflow:hidden}
+.cell:hover:not(:disabled){background:rgba(139,92,246,.14);transform:translateY(-2px);border-color:rgba(139,92,246,.4)}
+.cell:disabled{cursor:default}.cell.x{color:#a78bfa;text-shadow:0 0 25px rgba(167,139,250,.6)}.cell.o{color:#67e8f9;text-shadow:0 0 25px rgba(103,232,249,.5)}
+.pop{animation:pop .3s cubic-bezier(.2,1.6,.4,1)}.win{animation:win .6s ease infinite alternate!important;background:rgba(139,92,246,.2)!important}
+.status{text-align:center;min-height:24px;color:#cbd5e1;margin:15px 0 4px;font-size:14px}.status strong{color:#fff}
+.newround{width:100%;margin-top:14px}
+.modal{position:fixed;inset:0;background:rgba(2,5,15,.65);backdrop-filter:blur(10px);display:grid;place-items:center;padding:20px;z-index:20}
+.result{width:min(390px,100%);text-align:center;padding:38px 25px;animation:rise .45s ease}.result-icon{font-size:65px;margin-bottom:8px}.result h2{font-size:31px;margin:0 0 8px}.result p{color:var(--muted);margin-bottom:24px}
+.confetti{position:fixed;width:8px;height:14px;top:-20px;z-index:30;animation:fall linear forwards;border-radius:2px}
+@keyframes rise{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.5);opacity:.3}70%{transform:scale(1.16)}100%{transform:scale(1);opacity:1}}
+@keyframes win{from{transform:scale(1)}to{transform:scale(1.035)}}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@media(max-width:430px){.home{padding:38px 20px}.features{gap:6px}.feature{font-size:10px}.game{padding:16px}.cell{border-radius:16px}}
+</style>
+</head>
+<body>
+
+<section class="screen" id="homeScreen">
+ <div class="container">
+  <div class="glass home">
+   <div class="logo">✕○</div>
+   <h1>Tic Tac <span class="gradient">Toe</span></h1>
+   <p class="lead">Классическая игра против искусственного интеллекта. Проверь, сможешь ли ты победить его на максимальной сложности.</p>
+   <button class="primary" id="startBtn">Начать игру&nbsp; →</button>
+   <div class="features">
+    <div class="feature"><b>🤖 AI</b>3 уровня</div>
+    <div class="feature"><b>⚡ 100%</b>в браузере</div>
+    <div class="feature"><b>📱</b>Адаптивная</div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="screen hidden" id="gameScreen">
+ <div class="container">
+  <div class="glass game">
+   <div class="top">
+    <button class="back" id="backBtn">← Меню</button>
+    <div class="title">Tic Tac Toe</div>
+    <div class="ai">AI ONLINE ●</div>
+   </div>
+   <div class="controls">
+    <div class="difficulty">
+     <button class="diff" data-level="easy">Легко</button>
+     <button class="diff active" data-level="medium">Средне</button>
+     <button class="diff" data-level="hard">Эксперт</button>
+    </div>
+    <button class="reset" id="resetBtn">↻</button>
+   </div>
+   <div class="score">
+    <div class="player"><small>ВЫ · X</small><span class="num" id="pScore">0</span></div>
+    <div class="vs">VS</div>
+    <div class="player"><small>ИИ · O</small><span class="num" id="aScore">0</span></div>
+   </div>
+   <div class="board" id="board"></div>
+   <div class="status" id="status">Ваш ход — начинайте!</div>
+   <button class="primary newround" id="newRound">Новый раунд</button>
+  </div>
+ </div>
+</section>
+
+<div class="modal hidden" id="modal">
+ <div class="glass result">
+  <div class="result-icon" id="resultIcon">🏆</div>
+  <h2 id="resultTitle">Победа!</h2>
+  <p id="resultText">Отличная игра.</p>
+  <button class="primary" id="modalBtn">Играть ещё →</button>
+ </div>
+</div>
+
+<script>
+const W=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let b=Array(9).fill(""),over=false,level="medium",scores={p:0,a:0,d:0};
+const $=id=>document.getElementById(id);
+
+function render(){
+ $("board").innerHTML="";
+ b.forEach((v,i)=>{
+  let c=document.createElement("button"); c.className="cell "+(v==="X"?"x ":"")+(v==="O"?"o ":"");
+  c.textContent=v;c.disabled=over||!!v;
+  if(v)c.classList.add("pop");
+  c.onclick=()=>move(i);$("board").appendChild(c);
+ });
+}
+function result(a=b){
+ for(const [x,y,z] of W)if(a[x]&&a[x]===a[y]&&a[x]===a[z])return {winner:a[x],line:[x,y,z]};
+ return a.every(Boolean)?{winner:"D",line:[]}:null;
+}
+function move(i){
+ if(over||b[i])return;b[i]="X";render();
+ let r=result();if(r)return finish(r);
+ $("status").textContent="ИИ думает…";
+ setTimeout(aiMove,260);
+}
+function empty(){return b.map((v,i)=>v?null:i).filter(i=>i!==null)}
+function aiMove(){
+ if(over)return;
+ let m=level==="easy"?random():level==="medium"?(Math.random()<.68?best():random()):best();
+ b[m]="O";render();let r=result();if(r)finish(r);else $("status").textContent="Ваш ход";
+}
+function random(){let e=empty();return e[Math.floor(Math.random()*e.length)]}
+function best(){
+ let score=-Infinity,m;
+ for(let i of empty()){b[i]="O";let s=mini(b,false,0);b[i]="";if(s>score){score=s;m=i}}
+ return m
+}
+function mini(a,max,depth){
+ let r=result(a);if(r)return r.winner==="O"?10-depth:r.winner==="X"?depth-10:0;
+ if(max){let s=-Infinity;for(let i of emptyFor(a)){a[i]="O";s=Math.max(s,mini(a,false,depth+1));a[i]=""}return s}
+ let s=Infinity;for(let i of emptyFor(a)){a[i]="X";s=Math.min(s,mini(a,true,depth+1));a[i]=""}return s
+}
+function emptyFor(a){return a.map((v,i)=>v?null:i).filter(i=>i!==null)}
+function finish(r){
+ over=true;
+ if(r.winner==="X"){scores.p++;showResult("🏆","Вы победили!","ИИ не смог вас остановить.",r.line,true)}
+ else if(r.winner==="O"){scores.a++;showResult("🤖","ИИ победил","Попробуйте ещё раз — теперь вы знаете его тактику.",r.line,false)}
+ else{scores.d++;showResult("🤝","Ничья","Ни один из игроков не смог получить три в ряд.",[],false)}
+ $("pScore").textContent=scores.p;$("aScore").textContent=scores.a;render();
+}
+function showResult(icon,title,text,line,win){
+ $("resultIcon").textContent=icon;$("resultTitle").textContent=title;$("resultText").textContent=text;
+ if(line.length)setTimeout(()=>line.forEach(i=>$("board").children[i].classList.add("win")),50);
+ $("modal").classList.remove("hidden");if(win)confetti();
+}
+function newRound(){
+ b=Array(9).fill("");over=false;$("modal").classList.add("hidden");$("status").textContent="Ваш ход — начинайте!";render();
+}
+function confetti(){
+ for(let i=0;i<55;i++){let x=document.createElement("i");x.className="confetti";x.style.left=Math.random()*100+"vw";x.style.animationDuration=(1.2+Math.random()*1.7)+"s";x.style.animationDelay=Math.random()*.25+"s";x.style.background=["#8b5cf6","#22d3ee","#f59e0b","#f43f5e","#22c55e"][i%5];document.body.appendChild(x);setTimeout(()=>x.remove(),3200)}
+}
+$("startBtn").onclick=()=>{$("homeScreen").classList.add("hidden");$("gameScreen").classList.remove("hidden");newRound()};
+$("backBtn").onclick=()=>{$("gameScreen").classList.add("hidden");$("homeScreen").classList.remove("hidden");$("modal").classList.add("hidden")};
+$("resetBtn").onclick=newRound;$("newRound").onclick=newRound;$("modalBtn").onclick=newRound;
+document.querySelectorAll(".diff").forEach(x=>x.onclick=()=>{level=x.dataset.level;document.querySelectorAll(".diff").forEach(y=>y.classList.remove("active"));x.classList.add("active");newRound()});
+render();
+</script>
+</body>
+</html>
